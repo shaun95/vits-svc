@@ -25,6 +25,7 @@ f0_max = 1100.0
 f0_min = 50.0
 f0_mel_min = 1127 * np.log(1 + f0_min / 700)
 f0_mel_max = 1127 * np.log(1 + f0_max / 700)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def f0_to_coarse(f0):
   is_torch = isinstance(f0, torch.Tensor)
@@ -37,6 +38,60 @@ def f0_to_coarse(f0):
   assert f0_coarse.max() <= 255 and f0_coarse.min() >= 1, (f0_coarse.max(), f0_coarse.min())
   return f0_coarse
 
+def repeat_expand_2d(content, target_len):
+    # content : [h, t]
+
+    src_len = content.shape[-1]
+    target = torch.zeros([content.shape[0], target_len], dtype=torch.float)
+    temp = torch.arange(src_len + 1) * target_len / src_len
+    current_pos = 0
+    for i in range(target_len):
+      if i < temp[current_pos + 1]:
+        target[:, i] = content[:, current_pos]
+      else:
+        current_pos += 1
+        target[:, i] = content[:, current_pos]
+
+    return target
+
+
+def load_cn_model(n=None):
+    from fairseq import checkpoint_utils
+    models, saved_cfg, task = checkpoint_utils.load_model_ensemble_and_task(
+        ['hubert/chinese-hubert-base.pt'],
+        suffix="",
+    )
+    model = models[0]
+    model = model.to(device)
+    model.eval()
+    return model
+
+
+def get_cn_hubert_units(con_model, y=None, path=None):
+    if path != None:
+        audio, sampling_rate = librosa.load(path)
+        if len(audio.shape) > 1:
+            audio = librosa.to_mono(audio.transpose(1, 0))
+        if sampling_rate != 16000:
+            audio = librosa.resample(audio, orig_sr=sampling_rate, target_sr=16000)
+        feats = torch.from_numpy(audio).float()
+
+    else:
+        feats = y.squeeze(0)
+    if feats.dim() == 2:  # double channels
+        feats = feats.mean(-1)
+    assert feats.dim() == 1, feats.dim()
+    feats = feats.view(1, -1)
+    padding_mask = torch.BoolTensor(feats.shape).fill_(False)
+    inputs = {
+        "source": feats.to(device),
+        "padding_mask": padding_mask.to(device),
+        "output_layer": 9,  # layer 9
+    }
+    with torch.no_grad():
+        logits = con_model.extract_features(**inputs)
+        feats = con_model.final_proj(logits[0])
+    return feats.transpose(1,2)
 
 def get_hubert_model(rank=None):
 

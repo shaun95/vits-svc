@@ -5,15 +5,94 @@ from random import shuffle
 import json
 
 config_template = {
-
+  "train": {
+    "log_interval": 200,
+    "eval_interval": 1000,
+    "seed": 1234,
+    "epochs": 10000,
+    "learning_rate": 0.0002,
+    "betas": [
+      0.8,
+      0.99
+    ],
+    "eps": 1e-09,
+    "batch_size": 16,
+    "fp16_run": false,
+    "lr_decay": 0.999875,
+    "segment_size": 17920,
+    "init_lr_ratio": 1,
+    "warmup_epochs": 0,
+    "c_mel": 45,
+    "c_kl": 1.0,
+    "use_sr": true,
+    "max_speclen": 384,
+    "port": "8001"
+  },
+  "data": {
+    "training_files": "filelists/train.txt",
+    "validation_files": "filelists/val.txt",
+    "max_wav_value": 32768.0,
+    "sampling_rate": 44100,
+    "filter_length": 2048,
+    "hop_length": 512,
+    "win_length": 2048,
+    "n_mel_channels": 128,
+    "mel_fmin": 0.0,
+    "mel_fmax": null
+  },
+  "model": {
+    "inter_channels": 192,
+    "hidden_channels": 192,
+    "filter_channels": 768,
+    "n_heads": 2,
+    "n_layers": 6,
+    "kernel_size": 3,
+    "p_dropout": 0.1,
+    "resblock": "1",
+    "resblock_kernel_sizes": [
+      3,
+      7,
+      11
+    ],
+    "resblock_dilation_sizes": [
+      [
+        1,
+        3,
+        5
+      ],
+      [
+        1,
+        3,
+        5
+      ],
+      [
+        1,
+        3,
+        5
+      ]
+    ],
+    "upsample_rates": [ 8, 8, 2, 2, 2],
+    "upsample_initial_channel": 512,
+    "upsample_kernel_sizes": [16,16, 4, 4, 4],
+    "n_layers_q": 3,
+    "use_spectral_norm": False,
+    "gin_channels": 256,
+    "ssl_dim": 256,
+    "n_speakers": 10
+  },
+  "spk": {
+    "jishuang": 0,
+    "huiyu": 1,
+    "paimon": 2,
+    "yunhao": 3
 }
-
+}
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_list", type=str, default="./filelists/train.txt", help="path to train list")
     parser.add_argument("--val_list", type=str, default="./filelists/val.txt", help="path to val list")
     parser.add_argument("--test_list", type=str, default="./filelists/test.txt", help="path to test list")
-    parser.add_argument("--source_dir", type=str, default="./dataset/32k", help="path to source dir")
+    parser.add_argument("--source_dir", type=str, default="./dataset", help="path to source dir")
     args = parser.parse_args()
     
     train = []
