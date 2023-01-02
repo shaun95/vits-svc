@@ -17,14 +17,14 @@ config_template = {
     ],
     "eps": 1e-09,
     "batch_size": 16,
-    "fp16_run": false,
+    "fp16_run": False,
     "lr_decay": 0.999875,
     "segment_size": 17920,
     "init_lr_ratio": 1,
     "warmup_epochs": 0,
     "c_mel": 45,
     "c_kl": 1.0,
-    "use_sr": true,
+    "use_sr": True,
     "max_speclen": 384,
     "port": "8001"
   },
@@ -38,7 +38,7 @@ config_template = {
     "win_length": 2048,
     "n_mel_channels": 128,
     "mel_fmin": 0.0,
-    "mel_fmax": null
+    "mel_fmax": None
   },
   "model": {
     "inter_channels": 192,
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         spk_dict[speaker] = spk_id
         spk_id += 1
         wavs = [os.path.join(args.source_dir, speaker, i)for i in os.listdir(os.path.join(args.source_dir, speaker))]
-        wavs = [i for i in wavs if i.endswith("wav")]
+        wavs = [i for i in wavs if i.endswith("wav") and not i.endswith(".16k.wav")]
         shuffle(wavs)
         train += wavs[2:-10]
         val += wavs[:2]

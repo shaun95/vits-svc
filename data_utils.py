@@ -138,7 +138,7 @@ class EvalDataLoader(torch.utils.data.Dataset):
         lmin = min(c.size(-1), spec.size(-1), f0.shape[0])
         assert abs(c.size(-1) - spec.size(-1)) < 4, (c.size(-1), spec.size(-1), f0.shape)
         assert abs(f0.shape[0] - spec.shape[-1]) < 4, (c.size(-1), spec.size(-1), f0.shape)
-        spec, c, f0 = spec[:, :lmin], c[:, :lmin], f0[:lmin]
+        spec, c, f0 = spec[:, :lmin], c[:lmin], f0[:lmin]
         audio_norm = audio_norm[:, :lmin * self.hop_length]
 
         return c, f0, spec, audio_norm, spk

@@ -63,9 +63,12 @@ def resize2d(x, target_len):
     res = np.nan_to_num(target)
     return res
 
-def compute_f0(path, c_len):
+def compute_f0(path, c_len=None):
     x, sr = librosa.load(path, sr=None)
     assert sr == sampling_rate
+    if c_len is None:
+        c_len = x.shape[0]//hop_length
+
     f0, t = pyworld.dio(
         x.astype(np.double),
         fs=sr,
@@ -83,24 +86,27 @@ def compute_f0(path, c_len):
 def process(filename):
     print(filename)
 
+    f0path = filename+".f0.npy"
+    if not os.path.exists(f0path):
+        cf0, f0 = compute_f0(filename)
+        np.save(f0path, f0)
+    else:
+        f0 = np.load(f0path)
+    c_len = f0.shape[0]
     save_name = filename+".discrete.npy"
     if not os.path.exists(save_name):
         devive = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         wav, sr = librosa.load(filename+".16k.wav",sr=None)
-        c_len = wav.shape[0] // hop_length
         assert sr == 16000
         wav = torch.from_numpy(wav).unsqueeze(0).to(devive)
         c = utils.get_cn_hubert_units(hmodel, wav).cpu().squeeze(0)
         c = utils.repeat_expand_2d(c, c_len).numpy()
+
         c = cluster.get_cluster_result(c.transpose())
         np.save(save_name,c)
     else:
         c = np.load(save_name)
 
-    f0path = filename+".f0.npy"
-    if not os.path.exists(f0path):
-        cf0, f0 = compute_f0(filename, c.shape[-1])
-        np.save(f0path, f0)
 
 
 

@@ -305,14 +305,14 @@ class SynthesizerTrn(nn.Module):
 
     self.enc_p = TextEncoder(ssl_dim, inter_channels, hidden_channels, 5, 1, 6,0, filter_channels, n_heads, p_dropout)
     hps = {
-        "sampling_rate": 32000,
+        "sampling_rate": 44100,
         "inter_channels": 192,
         "resblock": "1",
         "resblock_kernel_sizes": [3, 7, 11],
         "resblock_dilation_sizes": [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
-        "upsample_rates": [10, 8, 2, 2],
+        "upsample_rates": [ 8, 8, 2, 2, 2],
         "upsample_initial_channel": 512,
-        "upsample_kernel_sizes": [16, 16, 4, 4],
+        "upsample_kernel_sizes": [16,16, 4, 4, 4],
         "gin_channels": 256,
     }
     self.dec = Generator(h=hps)
