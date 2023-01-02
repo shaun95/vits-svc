@@ -57,8 +57,8 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         spk = filename.split(os.sep)[-2]
         spk = torch.LongTensor([self.spk_map[spk]])
 
-        c = torch.load(filename + ".soft.pt").squeeze(0)
-        c = torch.repeat_interleave(c, repeats=2, dim=1)
+        c = np.load(filename + ".discrete.npy")
+        c = torch.LongTensor(c)
 
         f0 = np.load(filename + ".f0.npy")
         f0 = torch.FloatTensor(f0)
@@ -66,7 +66,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         assert abs(c.size(-1) - spec.size(-1)) < 4, (c.size(-1), spec.size(-1), f0.shape, filename)
         assert abs(lmin - spec.size(-1)) < 4, (c.size(-1), spec.size(-1), f0.shape)
         assert abs(lmin - c.size(-1)) < 4, (c.size(-1), spec.size(-1), f0.shape)
-        spec, c, f0 = spec[:, :lmin], c[:, :lmin], f0[:lmin]
+        spec, c, f0 = spec[:, :lmin], c[:lmin], f0[:lmin]
         audio_norm = audio_norm[:, :lmin * self.hop_length]
         _spec, _c, _audio_norm, _f0 = spec, c, audio_norm, f0
         while spec.size(-1) < self.spec_len:
@@ -77,7 +77,7 @@ class TextAudioSpeakerLoader(torch.utils.data.Dataset):
         start = random.randint(0, spec.size(-1) - self.spec_len)
         end = start + self.spec_len
         spec = spec[:, start:end]
-        c = c[:, start:end]
+        c = c[start:end]
         f0 = f0[start:end]
         audio_norm = audio_norm[:, start * self.hop_length:end * self.hop_length]
 
@@ -130,9 +130,8 @@ class EvalDataLoader(torch.utils.data.Dataset):
         spk = filename.split(os.sep)[-2]
         spk = torch.LongTensor([self.spk_map[spk]])
 
-        c = torch.load(filename + ".soft.pt").squeeze(0)
-
-        c = torch.repeat_interleave(c, repeats=2, dim=1)
+        c = np.load(filename + ".discrete.npy")
+        c = torch.LongTensor(c)
 
         f0 = np.load(filename + ".f0.npy")
         f0 = torch.FloatTensor(f0)

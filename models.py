@@ -100,9 +100,9 @@ class TextEncoder(nn.Module):
     self.dilation_rate = dilation_rate
     self.n_layers = n_layers
     self.gin_channels = gin_channels
-    self.pre = nn.Conv1d(in_channels, hidden_channels, 1)
     self.proj = nn.Conv1d(hidden_channels, out_channels * 2, 1)
     self.f0_emb = nn.Embedding(256, hidden_channels)
+    self.discrete_emb = nn.Embedding(100, hidden_channels)
 
     self.enc_ =  attentions.Encoder(
         hidden_channels,
@@ -113,8 +113,8 @@ class TextEncoder(nn.Module):
         p_dropout)
 
   def forward(self, x, x_lengths, f0=None):
-    x_mask = torch.unsqueeze(commons.sequence_mask(x_lengths, x.size(2)), 1).to(x.dtype)
-    x = self.pre(x) * x_mask
+    x_mask = torch.unsqueeze(commons.sequence_mask(x_lengths, x.size(1)), 1).to(x.dtype)
+    x = self.discrete_emb(x).transpose(1,2) * x_mask
     x = x + self.f0_emb(f0).transpose(1,2)
     x = self.enc_(x * x_mask, x_mask)
     stats = self.proj(x) * x_mask
@@ -303,7 +303,7 @@ class SynthesizerTrn(nn.Module):
     self.ssl_dim = ssl_dim
     self.emb_g = nn.Embedding(n_speakers, gin_channels)
 
-    self.enc_p_ = TextEncoder(ssl_dim, inter_channels, hidden_channels, 5, 1, 16,0, filter_channels, n_heads, p_dropout)
+    self.enc_p = TextEncoder(ssl_dim, inter_channels, hidden_channels, 5, 1, 6,0, filter_channels, n_heads, p_dropout)
     hps = {
         "sampling_rate": 32000,
         "inter_channels": 192,
@@ -327,7 +327,7 @@ class SynthesizerTrn(nn.Module):
 
     g = self.emb_g(g).transpose(1,2)
 
-    z_ptemp, m_p, logs_p, _ = self.enc_p_(c, c_lengths, f0=f0_to_coarse(f0))
+    z_ptemp, m_p, logs_p, _ = self.enc_p(c, c_lengths, f0=f0_to_coarse(f0))
     z, m_q, logs_q, spec_mask = self.enc_q(spec, spec_lengths, g=g) 
 
     z_p = self.flow(z, spec_mask, g=g)
@@ -343,7 +343,7 @@ class SynthesizerTrn(nn.Module):
       c_lengths = (torch.ones(c.size(0)) * c.size(-1)).to(c.device)
     g = self.emb_g(g).transpose(1,2)
 
-    z_p, m_p, logs_p, c_mask = self.enc_p_(c, c_lengths, f0=f0_to_coarse(f0))
+    z_p, m_p, logs_p, c_mask = self.enc_p(c, c_lengths, f0=f0_to_coarse(f0))
     z = self.flow(z_p, c_mask, g=g, reverse=True)
 
     o = self.dec(z * c_mask, g=g, f0=f0)
