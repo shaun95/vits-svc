@@ -10,14 +10,14 @@ config_template = {
     "eval_interval": 1000,
     "seed": 1234,
     "epochs": 10000,
-    "learning_rate": 0.0002,
+    "learning_rate": 0.0001,
     "betas": [
       0.8,
       0.99
     ],
     "eps": 1e-09,
     "batch_size": 16,
-    "fp16_run": False,
+    "fp16_run": True,
     "lr_decay": 0.999875,
     "segment_size": 17920,
     "init_lr_ratio": 1,
